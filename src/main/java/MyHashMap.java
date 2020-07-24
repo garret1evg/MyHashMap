@@ -1,5 +1,4 @@
 import java.util.NoSuchElementException;
-import java.util.Objects;
 
 /*******************************************************************************
  * Copyright (c) 2020 Chmutov Eugene <garret.evg@gmail.com>.
@@ -111,8 +110,8 @@ public class MyHashMap {
 
     // хэш-функция
     private int hash(int hash){
-        if (hash == 0) return 0;
-        return Objects.hashCode(hash);
+
+        return (hash >> 15) ^ hash;
     }
 
     public boolean containsKey(int key){

@@ -45,6 +45,7 @@ public class MyHashMapTest {
     public void getWrongKeyTest() throws Exception {
         map.get(100);
     }
+
     @Test(expected = IllegalArgumentException.class)
     public void constructorTest() throws Exception {
         MyHashMap map1 = new MyHashMap(-1);

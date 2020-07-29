@@ -1,3 +1,4 @@
+import java.util.Arrays;
 import java.util.NoSuchElementException;
 
 /*******************************************************************************
@@ -15,7 +16,9 @@ public class MyHashMap {
     private int size; //количество елементов в карте
     private float loadFactor;
     private float multiplier;
-    private Entry[] table;
+    private int[] keys;
+    private long[] values;
+    private boolean[] isInUse; //массив для определения статуса ячейки в карте(свободна/занята)
 
     //конструкторы
     public MyHashMap() {
@@ -23,7 +26,10 @@ public class MyHashMap {
         this.loadFactor = LOAD_FACTOR;
         this.size = 0;
         this.multiplier = MULTIPLIER;
-        table = new Entry[capacity];
+        keys = new int[capacity];
+        values = new long[capacity];
+        isInUse = new boolean[capacity];
+        Arrays.fill(isInUse, Boolean.FALSE);
     }
 
     public MyHashMap(int capacity) {
@@ -34,7 +40,10 @@ public class MyHashMap {
             this.loadFactor = LOAD_FACTOR;
             this.size = 0;
             this.multiplier = MULTIPLIER;
-            table = new Entry[capacity];
+            keys = new int[capacity];
+            values = new long[capacity];
+            isInUse = new boolean[capacity];
+            Arrays.fill(isInUse, Boolean.FALSE);
         }
 
     }
@@ -51,7 +60,10 @@ public class MyHashMap {
             this.loadFactor = loadFactor;
             this.multiplier = multiplier;
             this.size = 0;
-            table = new Entry[capacity];
+            keys = new int[capacity];
+            values = new long[capacity];
+            isInUse = new boolean[capacity];
+            Arrays.fill(isInUse, Boolean.FALSE);
         }
     }
 
@@ -63,13 +75,15 @@ public class MyHashMap {
         int index = getIndex(key);
         for (int i = index; ; i++) {
             if(i == capacity) i = 0;
-            if(table[i] == null) {
-                table[i] = new Entry(key,value);
+            if(!isInUse[i]) {
+                keys[i] = key;
+                values[i] = value;
+                isInUse[i] = Boolean.TRUE;
                 size++;
                 return true;
             }
-            if (table[i].getKey() == key){
-                if(table[i].getValue() == value)
+            if (keys[i] == key){
+                if(values[i] == value)
                     return true;
                 throw new RuntimeException("Key is already is use!!!");
             }
@@ -81,8 +95,8 @@ public class MyHashMap {
     public long get(int key) {
         for (int i = getIndex(key); ; i++) {
             if(i == capacity) i = 0;
-            if(table[i] == null) throw new NoSuchElementException("No such key! -> [" + key + "]");
-            if (table[i].getKey() == key) return table[i].getValue();
+            if(!isInUse[i]) throw new NoSuchElementException("No such key! -> [" + key + "]");
+            if (keys[i] == key) return values[i];
         }
     }
 
@@ -93,14 +107,20 @@ public class MyHashMap {
 
     // увеличение размера карты
     private void resize(){
-        capacity*=multiplier;
-        Entry[] oldTable = table;
-        table = new Entry[capacity];
+        capacity *= multiplier;
+        int[] oldKeys = keys;
+        long[] oldValues = values;
+        boolean[] oldIsInUse = isInUse;
+        keys = new int[capacity];
+        values = new long[capacity];
+        isInUse = new boolean[capacity];
         size = 0;
 
-        for(Entry e : oldTable)
-            if(e != null)
-                put(e.getKey(),e.getValue());
+        for (int i = 0;i < (capacity/multiplier) ; i++) {
+            if (oldIsInUse[i])
+                put(oldKeys[i],oldValues[i]);
+        }
+
     }
 
     // возвращает номер позиции по значению хэш-функции
@@ -114,31 +134,13 @@ public class MyHashMap {
         return (hash >> 15) ^ hash;
     }
 
+    //проверяет наличие ключа в карте
     public boolean containsKey(int key){
         for (int i = getIndex(key); ; i++) {
             if(i == capacity) i = 0;
-            if(table[i] == null) return false;
-            if (table[i].getKey() == key) return true;
+            if(!isInUse[i]) return false;
+            if (keys[i] == key) return true;
         }
     }
 
-    //Пара <ключ, значение>
-    class Entry {
-        private int key;
-        private long value;
-
-        public Entry(int key, long value) {
-            this.key = key;
-            this.value = value;
-        }
-
-        public int getKey() {
-            return key;
-        }
-
-        public long getValue() {
-            return value;
-        }
-
-    }
 }

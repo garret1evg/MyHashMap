@@ -8,46 +8,20 @@ import java.util.NoSuchElementException;
 
 public class MyHashMap {
 
-    private final int DEFAULT_INITIAL_CAPACITY = 16;//размер карты по умолчанию
-    private final float LOAD_FACTOR = 0.5f;//максимальная загруженость карты по умолчанию
-    private final float MULTIPLIER = 2.0f; //во столько раз увеличится размер карты при пересборке по умолчанию
+    static private final int DEFAULT_INITIAL_CAPACITY = 16;//размер карты по умолчанию
+    static private final float LOAD_FACTOR = 0.5f;//максимальная загруженость карты по умолчанию
+    static private final float MULTIPLIER = 2.0f; //во столько раз увеличится размер карты при пересборке по умолчанию
 
     private int capacity;
     private int size; //количество елементов в карте
     private float loadFactor;
+    private int maxSize;
     private float multiplier;
     private int[] keys;
     private long[] values;
     private boolean[] isInUse; //массив для определения статуса ячейки в карте(свободна/занята)
 
     //конструкторы
-    public MyHashMap() {
-        this.capacity = DEFAULT_INITIAL_CAPACITY;
-        this.loadFactor = LOAD_FACTOR;
-        this.size = 0;
-        this.multiplier = MULTIPLIER;
-        keys = new int[capacity];
-        values = new long[capacity];
-        isInUse = new boolean[capacity];
-        Arrays.fill(isInUse, Boolean.FALSE);
-    }
-
-    public MyHashMap(int capacity) {
-        if (capacity <= 0){
-            throw new IllegalArgumentException("Initial capacity is negative: " + capacity);
-        } else {
-            this.capacity = capacity;
-            this.loadFactor = LOAD_FACTOR;
-            this.size = 0;
-            this.multiplier = MULTIPLIER;
-            keys = new int[capacity];
-            values = new long[capacity];
-            isInUse = new boolean[capacity];
-            Arrays.fill(isInUse, Boolean.FALSE);
-        }
-
-    }
-
     public MyHashMap(int capacity, float loadFactor, float multiplier) {
         if (capacity <= 0){
             throw new IllegalArgumentException("Initial capacity is negative: " + capacity);
@@ -60,16 +34,24 @@ public class MyHashMap {
             this.loadFactor = loadFactor;
             this.multiplier = multiplier;
             this.size = 0;
+            maxSize = (int) (capacity*loadFactor);
             keys = new int[capacity];
             values = new long[capacity];
             isInUse = new boolean[capacity];
-            Arrays.fill(isInUse, Boolean.FALSE);
         }
+    }
+
+    public MyHashMap(int capacity) {
+        this(capacity,LOAD_FACTOR,MULTIPLIER);
+    }
+
+    public MyHashMap() {
+        this(DEFAULT_INITIAL_CAPACITY,LOAD_FACTOR,MULTIPLIER);
     }
 
     // кладет элемент с ключом и значением
     public boolean put(int key, long value) {
-        if (size + 1 >= capacity * loadFactor) {
+        if (size >= maxSize) {
             resize();
         }
         int index = getIndex(key);
@@ -78,7 +60,7 @@ public class MyHashMap {
             if(!isInUse[i]) {
                 keys[i] = key;
                 values[i] = value;
-                isInUse[i] = Boolean.TRUE;
+                isInUse[i] = true;
                 size++;
                 return true;
             }
@@ -107,7 +89,9 @@ public class MyHashMap {
 
     // увеличение размера карты
     private void resize(){
+        int oldCapacity = capacity;
         capacity *= multiplier;
+        maxSize = (int) (capacity*loadFactor);
         int[] oldKeys = keys;
         long[] oldValues = values;
         boolean[] oldIsInUse = isInUse;
@@ -116,7 +100,7 @@ public class MyHashMap {
         isInUse = new boolean[capacity];
         size = 0;
 
-        for (int i = 0;i < (capacity/multiplier) ; i++) {
+        for (int i = 0;i < (oldCapacity) ; i++) {
             if (oldIsInUse[i])
                 put(oldKeys[i],oldValues[i]);
         }
@@ -125,7 +109,8 @@ public class MyHashMap {
 
     // возвращает номер позиции по значению хэш-функции
     private int getIndex(int key){
-        return hash(key) % capacity;
+        int hash =hash(key);
+        return  hash % capacity;
     }
 
     // хэш-функция

@@ -17,7 +17,7 @@ public class MyHashMap {
     private int capacity;
     private final int emptyKey;//пустой ключ
     private boolean isEmptyKeyInUse;//используется пустой ключ
-    private int indexEmptyKey;//индекс пустого ключа
+    private long emptyKeyValue;//значение пустого ключа
     private int size; //количество елементов в карте
     private final float loadFactor;
     private int maxSize;
@@ -43,7 +43,7 @@ public class MyHashMap {
             this.size = 0;
             this.emptyKey = emptyKey;
             isEmptyKeyInUse = false;
-            indexEmptyKey = getIndex(this.emptyKey);
+            emptyKeyValue = 0;
             maxSize = (int) (capacity*loadFactor);
             keys = new int[capacity];
             values = new long[capacity];
@@ -62,11 +62,11 @@ public class MyHashMap {
 
     // кладет элемент с ключом и значением
     public boolean put(int key, long value) {
-        if (size >= maxSize) {
+        if (size - 1 >= maxSize) {
             resize();
         }
         if (key == emptyKey){
-            values[indexEmptyKey] = value;
+            emptyKeyValue = value;
             if (!isEmptyKeyInUse)
                 {
                     size++;
@@ -77,7 +77,6 @@ public class MyHashMap {
         }
         int index = getIndex(key);
         for (int i = index; ; i++) {
-            if (i ==  indexEmptyKey) i++;
             if(i == capacity) i = 0;
             if(keys[i] == 0) {
                 keys[i] = key;
@@ -96,9 +95,8 @@ public class MyHashMap {
     // возвращает значение по ключу
     public long get(int key) {
         if ((key == emptyKey)&&(isEmptyKeyInUse))
-            return values[indexEmptyKey];
+            return emptyKeyValue;
         for (int i = getIndex(key); ; i++) {
-            if (i == indexEmptyKey) i++;
             if(i == capacity) i = 0;
             if(keys[i] == 0) throw new NoSuchElementException("No such key! -> [" + key + "]");
             if (keys[i] == key) return values[i];
@@ -120,11 +118,8 @@ public class MyHashMap {
         keys = new int[capacity];
         values = new long[capacity];
         size = 0;
-        int oldIndexEmptyKey = indexEmptyKey;
-        indexEmptyKey = getIndex(emptyKey);
         if (isEmptyKeyInUse) {
-            isEmptyKeyInUse = false;
-            put(emptyKey, oldKeys[oldIndexEmptyKey]);
+            size++;
         }
 
         for (int i = 0;i < (oldCapacity) ; i++) {
@@ -151,7 +146,6 @@ public class MyHashMap {
         if ((key == emptyKey)&&(isEmptyKeyInUse))
             return true;
         for (int i = getIndex(key); ; i++) {
-            if (i == indexEmptyKey) i++;
             if(i == capacity) i = 0;
             if(keys[i] == 0) return false;
             if (keys[i] == key) return true;

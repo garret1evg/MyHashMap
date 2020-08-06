@@ -1,8 +1,3 @@
-/*******************************************************************************
- * Copyright (c) 2020 Chmutov Eugene <garret.evg@gmail.com>.
- * All rights reserved.
- ******************************************************************************/
-
 import org.junit.Before;
 import org.junit.Test;
 
@@ -15,7 +10,7 @@ import static org.junit.Assert.assertTrue;
 public class MyHashMapTest {
     MyHashMap map = new MyHashMap();
     @Before
-    public void setUp() throws Exception {
+    public void setUp() {
         map = new MyHashMap();
         map.put(32, 1L);
         map.put(22, 2L);
@@ -24,35 +19,53 @@ public class MyHashMapTest {
 
     }
     @Test
-    public void putTest() throws Exception {
+    public void putTest() {
         assertTrue(map.put(27, 6L));
     }
 
     @Test
-    public void getTest() throws Exception {
+    public void putDefaultEmptyKeyFirstTimeTest() {
+        int prevSize = map.size();
+
+        map.put(0, 8L);
+        assertEquals(++prevSize, map.size());
+        assertEquals(8L, map.get(0));
+    }
+
+    @Test
+    public void putDefaultEmptyKeySecondTimeTest() {
+        int prevSize = map.size();
+        map.put(0, 8L);
+        map.put(0, 1L);
+        assertEquals(++prevSize, map.size());
+        assertEquals(1L, map.get(0));
+    }
+
+    @Test
+    public void getTest() {
         long value = map.get(15);
         assertEquals(3L, value);
 
     }
 
     @Test
-    public void sizeTest() throws Exception {
+    public void sizeTest() {
         int size = map.size();
         assertEquals(4, size);
     }
 
     @Test(expected = NoSuchElementException.class)
-    public void getWrongKeyTest() throws Exception {
+    public void getWrongKeyTest() {
         map.get(100);
     }
 
     @Test(expected = IllegalArgumentException.class)
-    public void constructorTest() throws Exception {
+    public void constructorTest() {
         MyHashMap map1 = new MyHashMap(-1);
     }
     @Test
-    public void resizeTest() throws Exception {
-        MyHashMap map1 = new MyHashMap(8,0.5f,2f);
+    public void resizeTest() {
+        MyHashMap map1 = new MyHashMap(8,0.5f,2f,0);
         map1.put(32, 1L);
         map1.put(22, 2L);
         map1.put(15, 3L);
@@ -66,21 +79,24 @@ public class MyHashMapTest {
         assertEquals(6L, map1.get(27));
     }
     @Test
-    public void putByKeyInUseWithSameValueTest() throws Exception {
+    public void putByKeyInUseWithSameValueTest() {
         int prevSize = map.size();
         map.put(20, 5L);
         assertEquals(prevSize, map.size());
         assertEquals(5L, map.get(20));
     }
 
-    @Test(expected = RuntimeException.class)
-    public void putByKeyInUseWithAnotherValueTest() throws Exception {
+    @Test()
+    public void putByKeyInUseWithAnotherValueTest() {
+        int prevSize = map.size();
         map.put(20, 7L);
+        assertEquals(prevSize, map.size());
+        assertEquals(7L, map.get(20));
     }
 
     @Test
     public void randomStressTest(){
-        int numberEntries = 30000000;
+        int numberEntries = 3000000;
         Random rand = new Random();
         int key;
         long value;
@@ -88,7 +104,7 @@ public class MyHashMapTest {
         long[] values = new long[numberEntries];
         int currSize = map.size();
         for (int i=0;i<numberEntries;i++){
-            key = rand.nextInt(100000);
+            key = rand.nextInt();
             value = rand.nextLong();
             if(!map.containsKey(key)){
                 map.put(key,value);

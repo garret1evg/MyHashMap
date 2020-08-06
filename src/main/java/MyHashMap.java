@@ -11,42 +11,53 @@ public class MyHashMap {
     static private final int DEFAULT_INITIAL_CAPACITY = 16;//размер карты по умолчанию
     static private final float LOAD_FACTOR = 0.5f;//максимальная загруженость карты по умолчанию
     static private final float MULTIPLIER = 2.0f; //во столько раз увеличится размер карты при пересборке по умолчанию
+    static private final int DEFAULT_EMPTY_KEY = 0;//пустой ключ по умолчанию
+    static private final int DEFAULT_INTEGER = 0;//пустой int по умолчанию
 
     private int capacity;
+    private final int emptyKey;//пустой ключ
+    private boolean isEmptyKeyInUse;//используется пустой ключ
+    private int indexEmptyKey;//индекс пустого ключа
     private int size; //количество елементов в карте
-    private float loadFactor;
+    private final float loadFactor;
     private int maxSize;
-    private float multiplier;
+    private final float multiplier;
     private int[] keys;
     private long[] values;
-    private boolean[] isInUse; //массив для определения статуса ячейки в карте(свободна/занята)
+
 
     //конструкторы
-    public MyHashMap(int capacity, float loadFactor, float multiplier) {
+    public MyHashMap(int capacity, float loadFactor, float multiplier,int emptyKey) {
         if (capacity <= 0){
             throw new IllegalArgumentException("Initial capacity is negative: " + capacity);
         } else if (loadFactor <= 0){
             throw new IllegalArgumentException("Initial loadFactor is negative: " + loadFactor);
-        } else if (multiplier <= 0){
-            throw new IllegalArgumentException("Initial multiplier is negative: " + multiplier);
+        } else if (loadFactor >= 1){
+            throw new IllegalArgumentException("Initial loadFactor is greater than 1: " + loadFactor);
+        } else if (multiplier <= 1){
+            throw new IllegalArgumentException("Initial multiplier is less than 1: " + multiplier);
         } else{
             this.capacity = capacity;
             this.loadFactor = loadFactor;
             this.multiplier = multiplier;
             this.size = 0;
+            this.emptyKey = emptyKey;
+            isEmptyKeyInUse = false;
+            indexEmptyKey = getIndex(this.emptyKey);
             maxSize = (int) (capacity*loadFactor);
             keys = new int[capacity];
             values = new long[capacity];
-            isInUse = new boolean[capacity];
+            if (this.emptyKey != DEFAULT_INTEGER)
+                Arrays.fill(keys,this.emptyKey);
         }
     }
 
     public MyHashMap(int capacity) {
-        this(capacity,LOAD_FACTOR,MULTIPLIER);
+        this(capacity,LOAD_FACTOR,MULTIPLIER,DEFAULT_EMPTY_KEY);
     }
 
     public MyHashMap() {
-        this(DEFAULT_INITIAL_CAPACITY,LOAD_FACTOR,MULTIPLIER);
+        this(DEFAULT_INITIAL_CAPACITY,LOAD_FACTOR,MULTIPLIER,DEFAULT_EMPTY_KEY);
     }
 
     // кладет элемент с ключом и значением
@@ -54,20 +65,29 @@ public class MyHashMap {
         if (size >= maxSize) {
             resize();
         }
+        if (key == emptyKey){
+            values[indexEmptyKey] = value;
+            if (!isEmptyKeyInUse)
+                {
+                    size++;
+                    isEmptyKeyInUse = true;
+
+                }
+            return true;
+        }
         int index = getIndex(key);
         for (int i = index; ; i++) {
+            if (i ==  indexEmptyKey) i++;
             if(i == capacity) i = 0;
-            if(!isInUse[i]) {
+            if(keys[i] == 0) {
                 keys[i] = key;
                 values[i] = value;
-                isInUse[i] = true;
                 size++;
                 return true;
             }
             if (keys[i] == key){
-                if(values[i] == value)
-                    return true;
-                throw new RuntimeException("Key is already is use!!!");
+                values[i] = value;
+                return true;
             }
 
         }
@@ -75,9 +95,12 @@ public class MyHashMap {
 
     // возвращает значение по ключу
     public long get(int key) {
+        if ((key == emptyKey)&&(isEmptyKeyInUse))
+            return values[indexEmptyKey];
         for (int i = getIndex(key); ; i++) {
+            if (i == indexEmptyKey) i++;
             if(i == capacity) i = 0;
-            if(!isInUse[i]) throw new NoSuchElementException("No such key! -> [" + key + "]");
+            if(keys[i] == 0) throw new NoSuchElementException("No such key! -> [" + key + "]");
             if (keys[i] == key) return values[i];
         }
     }
@@ -94,14 +117,18 @@ public class MyHashMap {
         maxSize = (int) (capacity*loadFactor);
         int[] oldKeys = keys;
         long[] oldValues = values;
-        boolean[] oldIsInUse = isInUse;
         keys = new int[capacity];
         values = new long[capacity];
-        isInUse = new boolean[capacity];
         size = 0;
+        int oldIndexEmptyKey = indexEmptyKey;
+        indexEmptyKey = getIndex(emptyKey);
+        if (isEmptyKeyInUse) {
+            isEmptyKeyInUse = false;
+            put(emptyKey, oldKeys[oldIndexEmptyKey]);
+        }
 
         for (int i = 0;i < (oldCapacity) ; i++) {
-            if (oldIsInUse[i])
+            if (oldKeys[i] != 0)
                 put(oldKeys[i],oldValues[i]);
         }
 
@@ -109,7 +136,7 @@ public class MyHashMap {
 
     // возвращает номер позиции по значению хэш-функции
     private int getIndex(int key){
-        int hash =hash(key);
+        int hash = Math.abs(hash(key));
         return  hash % capacity;
     }
 
@@ -121,9 +148,12 @@ public class MyHashMap {
 
     //проверяет наличие ключа в карте
     public boolean containsKey(int key){
+        if ((key == emptyKey)&&(isEmptyKeyInUse))
+            return true;
         for (int i = getIndex(key); ; i++) {
+            if (i == indexEmptyKey) i++;
             if(i == capacity) i = 0;
-            if(!isInUse[i]) return false;
+            if(keys[i] == 0) return false;
             if (keys[i] == key) return true;
         }
     }
